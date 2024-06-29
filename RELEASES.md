@@ -476,98 +476,82 @@ Based on:
 ### Releases
 - [PyPI v0.22.0] https://pypi.org/project/unstructured-client/0.22.0 - .
 
-## 2024-04-04 00:19:30
+## 2024-06-05 00:02:19
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.235.2 (2.298.2) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.299.7 (2.338.12) https://github.com/speakeasy-api/speakeasy
 ### Generated
 - [python v0.23.0] .
+### Releases
+- [PyPI v0.23.0] https://pypi.org/project/unstructured-client/0.23.0 - .
 
-## 2024-04-06 00:18:10
+## 2024-06-06 15:46:18
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.241.0 (2.300.0) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.300.0 (2.338.14) https://github.com/speakeasy-api/speakeasy
 ### Generated
 - [python v0.23.1] .
+### Releases
+- [PyPI v0.23.1] https://pypi.org/project/unstructured-client/0.23.1 - .
 
-## 2024-05-02 00:19:08
+## 2024-06-08 00:46:23
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.277.4 (2.318.3) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.300.1 (2.339.1) https://github.com/speakeasy-api/speakeasy
 ### Generated
-- [python v0.24.0] .
+- [python v0.23.2] .
+### Releases
+- [PyPI v0.23.2] https://pypi.org/project/unstructured-client/0.23.2 - .
 
-## 2024-05-03 00:19:27
+## 2024-06-10 15:30:46
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.277.8 (2.319.10) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.300.1 (2.339.1) https://github.com/speakeasy-api/speakeasy
 ### Generated
-- [python v0.24.1] .
+- [python v0.23.3] .
+### Releases
+- [PyPI v0.23.3] https://pypi.org/project/unstructured-client/0.23.3 - .
 
-## 2024-05-07 00:19:38
+## 2024-06-15 00:20:16
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.280.1 (2.322.5) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.308.1 (2.342.6) https://github.com/speakeasy-api/speakeasy
 ### Generated
-- [python v0.24.2] .
+- [python v0.23.4] .
+### Releases
+- [PyPI v0.23.4] https://pypi.org/project/unstructured-client/0.23.4 - .
 
-## 2024-05-09 00:19:17
+## 2024-06-15 19:11:05
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.285.1 (2.326.3) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.308.1 (2.342.6) https://github.com/speakeasy-api/speakeasy
 ### Generated
-- [python v0.25.0] .
+- [python v0.23.5] .
+### Releases
+- [PyPI v0.23.5] https://pypi.org/project/unstructured-client/0.23.5 - .
 
-## 2024-05-10 00:19:28
+## 2024-06-17 21:00:47
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.285.3 (2.326.3) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.308.1 (2.342.6) https://github.com/speakeasy-api/speakeasy
 ### Generated
-- [python v0.25.1] .
+- [python v0.23.7] .
+### Releases
+- [PyPI v0.23.7] https://pypi.org/project/unstructured-client/0.23.7 - .
 
-## 2024-05-10 14:48:16
+## 2024-06-28 00:20:41
 ### Changes
 Based on:
 - OpenAPI Doc  
-- Speakeasy CLI 1.285.4 (2.326.3) https://github.com/speakeasy-api/speakeasy
+- Speakeasy CLI 1.322.1 (2.354.2) https://github.com/speakeasy-api/speakeasy
 ### Generated
-- [python v0.25.2] .
-
-## 2024-05-18 00:19:44
-### Changes
-Based on:
-- OpenAPI Doc  
-- Speakeasy CLI 1.293.1 (2.333.3) https://github.com/speakeasy-api/speakeasy
-### Generated
-- [python v0.25.3] .
-
-## 2024-05-23 00:19:36
-### Changes
-Based on:
-- OpenAPI Doc  
-- Speakeasy CLI 1.295.1 (2.335.5) https://github.com/speakeasy-api/speakeasy
-### Generated
-- [python v0.26.5] .
-
-## 2024-06-03 00:52:27
-### Changes
-Based on:
-- OpenAPI Doc  
-- Speakeasy CLI 1.299.4 (2.338.7) https://github.com/speakeasy-api/speakeasy
-### Generated
-- [python v0.27.0] .
-
-## 2024-06-04 02:44:17
-### Changes
-Based on:
-- OpenAPI Doc  
-- Speakeasy CLI 1.299.6 (2.338.12) https://github.com/speakeasy-api/speakeasy
-### Generated
-- [python v0.27.1] .
+- [python v0.23.8] .
+### Releases
+- [PyPI v0.23.8] https://pypi.org/project/unstructured-client/0.23.8 - .

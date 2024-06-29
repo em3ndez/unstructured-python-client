@@ -8,6 +8,7 @@ import math
 from typing import Any, Coroutine, Optional, Tuple, Union
 
 import httpx
+import nest_asyncio
 import requests
 from pypdf import PdfReader
 from requests_toolbelt.multipart.decoder import MultipartDecoder
@@ -35,10 +36,11 @@ logger = logging.getLogger(UNSTRUCTURED_CLIENT_LOGGER_NAME)
 
 
 DEFAULT_STARTING_PAGE_NUMBER = 1
-DEFAULT_CONCURRENCY_LEVEL = 5
+DEFAULT_CONCURRENCY_LEVEL = 8
 MAX_CONCURRENCY_LEVEL = 15
 MIN_PAGES_PER_SPLIT = 2
 MAX_PAGES_PER_SPLIT = 20
+
 
 
 async def run_tasks(tasks):
@@ -66,6 +68,10 @@ class SplitPdfHook(SDKInitHook, BeforeRequestHook, AfterSuccessHook, AfterErrorH
     """
 
     def __init__(self) -> None:
+        # This allows us to use an event loop in an env with an existing loop
+        # Temporary fix until we can improve the async splitting behavior
+        nest_asyncio.apply()
+
         self.client: Optional[requests.Session] = None
         self.coroutines_to_execute: dict[
             str, list[Coroutine[Any, Any, requests.Response]]
@@ -129,7 +135,7 @@ class SplitPdfHook(SDKInitHook, BeforeRequestHook, AfterSuccessHook, AfterErrorH
             or not isinstance(file, shared.Files)
             or not pdf_utils.is_pdf(file)
         ):
-            logger.warning("File could not be split. Partitioning without split.")
+            logger.info("Partitioning without split.")
             return request
 
         starting_page_number = form_utils.get_starting_page_number(
@@ -154,7 +160,7 @@ class SplitPdfHook(SDKInitHook, BeforeRequestHook, AfterSuccessHook, AfterErrorH
         logger.info("Determined optimal split size of %d pages.", split_size)
 
         if split_size >= len(pdf.pages):
-            logger.warning(
+            logger.info(
                 "Document has too few pages (%d) to be split efficiently. Partitioning without split.",
                 len(pdf.pages),
             )
@@ -296,7 +302,6 @@ class SplitPdfHook(SDKInitHook, BeforeRequestHook, AfterSuccessHook, AfterErrorH
 
         updated_response = request_utils.create_response(response, elements)
         self._clear_operation(operation_id)
-        logger.info("Successfully processed the request.")
         return updated_response
 
     def after_error(
@@ -329,13 +334,9 @@ class SplitPdfHook(SDKInitHook, BeforeRequestHook, AfterSuccessHook, AfterErrorH
         successful_responses = self.api_successful_responses.get(operation_id)
 
         if elements is None or successful_responses is None:
-            logger.info("Successfully processed the request.")
             return (response, error)
 
         if len(successful_responses) == 0:
-            logger.error("Failed to process the request.")
-            if error is not None:
-                logger.error(error)
             self._clear_operation(operation_id)
             return (response, error)
 
@@ -343,7 +344,6 @@ class SplitPdfHook(SDKInitHook, BeforeRequestHook, AfterSuccessHook, AfterErrorH
             successful_responses[0], elements
         )
         self._clear_operation(operation_id)
-        logger.info("Successfully processed the request.")
         return (updated_response, None)
 
     def _clear_operation(self, operation_id: str) -> None:
