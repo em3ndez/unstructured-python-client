@@ -9,177 +9,491 @@
     <a href="https://speakeasyapi.dev/"><img src="https://custom-icon-badges.demolab.com/badge/-Built%20By%20Speakeasy-212015?style=for-the-badge&logoColor=FBE331&logo=speakeasy&labelColor=545454" /></a>
 </div>
 
+<div align="center">
+
+</div>
+
 <h2 align="center">
   <p>Python SDK for the Unstructured API</p>
 </h2>
 
-This is a Python client for the [Unstructured API](https://unstructured-io.github.io/unstructured/api.html).
+This is a HTTP client for the [Unstructured Platform API](https://docs.unstructured.io/platform-api/overview). You can sign up [here](https://unstructured.io/developers) and process 1000 free pages per day for 14 days.
 
-<div align="center">
+Please refer to the our documentation for a full guide on integrating the [Workflow Endpoint](https://docs.unstructured.io/platform-api/api/overview) and [Partition Endpoint](https://docs.unstructured.io/platform-api/partition-api/sdk-python) into your Python code.
 
- <a
-   href="https://www.phorm.ai/query?projectId=34efc517-2201-4376-af43-40c4b9da3dc5">
-	<img src="https://img.shields.io/badge/Phorm-Ask_AI-%23F2777A.svg?&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNSIgaGVpZ2h0PSI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxwYXRoIGQ9Ik00LjQzIDEuODgyYTEuNDQgMS40NCAwIDAgMS0uMDk4LjQyNmMtLjA1LjEyMy0uMTE1LjIzLS4xOTIuMzIyLS4wNzUuMDktLjE2LjE2NS0uMjU1LjIyNmExLjM1MyAxLjM1MyAwIDAgMS0uNTk1LjIxMmMtLjA5OS4wMTItLjE5Mi4wMTQtLjI3OS4wMDZsLTEuNTkzLS4xNHYtLjQwNmgxLjY1OGMuMDkuMDAxLjE3LS4xNjkuMjQ2LS4xOTFhLjYwMy42MDMgMCAwIDAgLjItLjEwNi41MjkuNTI5IDAgMCAwIC4xMzgtLjE3LjY1NC42NTQgMCAwIDAgLjA2NS0uMjRsLjAyOC0uMzJhLjkzLjkzIDAgMCAwLS4wMzYtLjI0OS41NjcuNTY3IDAgMCAwLS4xMDMtLjIuNTAyLjUwMiAwIDAgMC0uMTY4LS4xMzguNjA4LjYwOCAwIDAgMC0uMjQtLjA2N0wyLjQzNy43MjkgMS42MjUuNjcxYS4zMjIuMzIyIDAgMCAwLS4yMzIuMDU4LjM3NS4zNzUgMCAwIDAtLjExNi4yMzJsLS4xMTYgMS40NS0uMDU4LjY5Ny0uMDU4Ljc1NEwuNzA1IDRsLS4zNTctLjA3OUwuNjAyLjkwNkMuNjE3LjcyNi42NjMuNTc0LjczOS40NTRhLjk1OC45NTggMCAwIDEgLjI3NC0uMjg1Ljk3MS45NzEgMCAwIDEgLjMzNy0uMTRjLjExOS0uMDI2LjIyNy0uMDM0LjMyNS0uMDI2TDMuMjMyLjE2Yy4xNTkuMDE0LjMzNi4wMy40NTkuMDgyYTEuMTczIDEuMTczIDAgMCAxIC41NDUuNDQ3Yy4wNi4wOTQuMTA5LjE5Mi4xNDQuMjkzYTEuMzkyIDEuMzkyIDAgMCAxIC4wNzguNThsLS4wMjkuMzJaIiBmaWxsPSIjRjI3NzdBIi8+CiAgPHBhdGggZD0iTTQuMDgyIDIuMDA3YTEuNDU1IDEuNDU1IDAgMCAxLS4wOTguNDI3Yy0uMDUuMTI0LS4xMTQuMjMyLS4xOTIuMzI0YTEuMTMgMS4xMyAwIDAgMS0uMjU0LjIyNyAxLjM1MyAxLjM1MyAwIDAgMS0uNTk1LjIxNGMtLjEuMDEyLS4xOTMuMDE0LS4yOC4wMDZsLTEuNTYtLjEwOC4wMzQtLjQwNi4wMy0uMzQ4IDEuNTU5LjE1NGMuMDkgMCAuMTczLS4wMS4yNDgtLjAzM2EuNjAzLjYwMyAwIDAgMCAuMi0uMTA2LjUzMi41MzIgMCAwIDAgLjEzOS0uMTcyLjY2LjY2IDAgMCAwIC4wNjQtLjI0MWwuMDI5LS4zMjFhLjk0Ljk0IDAgMCAwLS4wMzYtLjI1LjU3LjU3IDAgMCAwLS4xMDMtLjIwMi41MDIuNTAyIDAgMCAwLS4xNjgtLjEzOC42MDUuNjA1IDAgMCAwLS4yNC0uMDY3TDEuMjczLjgyN2MtLjA5NC0uMDA4LS4xNjguMDEtLjIyMS4wNTUtLjA1My4wNDUtLjA4NC4xMTQtLjA5Mi4yMDZMLjcwNSA0IDAgMy45MzhsLjI1NS0yLjkxMUExLjAxIDEuMDEgMCAwIDEgLjM5My41NzIuOTYyLjk2MiAwIDAgMSAuNjY2LjI4NmEuOTcuOTcgMCAwIDEgLjMzOC0uMTRDMS4xMjIuMTIgMS4yMy4xMSAxLjMyOC4xMTlsMS41OTMuMTRjLjE2LjAxNC4zLjA0Ny40MjMuMWExLjE3IDEuMTcgMCAwIDEgLjU0NS40NDhjLjA2MS4wOTUuMTA5LjE5My4xNDQuMjk1YTEuNDA2IDEuNDA2IDAgMCAxIC4wNzcuNTgzbC0uMDI4LjMyMloiIGZpbGw9IndoaXRlIi8+CiAgPHBhdGggZD0iTTQuMDgyIDIuMDA3YTEuNDU1IDEuNDU1IDAgMCAxLS4wOTguNDI3Yy0uMDUuMTI0LS4xMTQuMjMyLS4xOTIuMzI0YTEuMTMgMS4xMyAwIDAgMS0uMjU0LjIyNyAxLjM1MyAxLjM1MyAwIDAgMS0uNTk1LjIxNGMtLjEuMDEyLS4xOTMuMDE0LS4yOC4wMDZsLTEuNTYtLjEwOC4wMzQtLjQwNi4wMy0uMzQ4IDEuNTU5LjE1NGMuMDkgMCAuMTczLS4wMS4yNDgtLjAzM2EuNjAzLjYwMyAwIDAgMCAuMi0uMTA2LjUzMi41MzIgMCAwIDAgLjEzOS0uMTcyLjY2LjY2IDAgMCAwIC4wNjQtLjI0MWwuMDI5LS4zMjFhLjk0Ljk0IDAgMCAwLS4wMzYtLjI1LjU3LjU3IDAgMCAwLS4xMDMtLjIwMi41MDIuNTAyIDAgMCAwLS4xNjgtLjEzOC42MDUuNjA1IDAgMCAwLS4yNC0uMDY3TDEuMjczLjgyN2MtLjA5NC0uMDA4LS4xNjguMDEtLjIyMS4wNTUtLjA1My4wNDUtLjA4NC4xMTQtLjA5Mi4yMDZMLjcwNSA0IDAgMy45MzhsLjI1NS0yLjkxMUExLjAxIDEuMDEgMCAwIDEgLjM5My41NzIuOTYyLjk2MiAwIDAgMSAuNjY2LjI4NmEuOTcuOTcgMCAwIDEgLjMzOC0uMTRDMS4xMjIuMTIgMS4yMy4xMSAxLjMyOC4xMTlsMS41OTMuMTRjLjE2LjAxNC4zLjA0Ny40MjMuMWExLjE3IDEuMTcgMCAwIDEgLjU0NS40NDhjLjA2MS4wOTUuMTA5LjE5My4xNDQuMjk1YTEuNDA2IDEuNDA2IDAgMCAxIC4wNzcuNTgzbC0uMDI4LjMyMloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=" />
-   </a>
+## Summary
 
-</div>
+## Table of Contents
+  * [SDK Installation](#sdk-installation)
+  * [Retries](#retries)
+  * [Error Handling](#error-handling)
+  * [Custom HTTP Client](#custom-http-client)
+  * [IDE Support](#ide-support)
+  * [SDK Example Usage](#sdk-example-usage)
+  * [Configuration](#configuration)
+  * [File uploads](#file-uploads)
+  * [Resource Management](#resource-management)
+  * [Debugging](#debugging)
 
-<!-- Start SDK Installation [installation] -->
 ## SDK Installation
+
+> [!NOTE]
+> **Python version upgrade policy**
+>
+> Once a Python version reaches its [official end of life date](https://devguide.python.org/versions/), a 3-month grace period is provided for users to upgrade. Following this grace period, the minimum python version supported in the SDK will be updated.
+
+The SDK can be installed with *uv*, *pip*, or *poetry* package managers.
+
+### uv
+
+*uv* is a fast Python package installer and resolver, designed as a drop-in replacement for pip and pip-tools. It's recommended for its speed and modern Python tooling capabilities.
+
+```bash
+uv add unstructured-client
+```
+
+### PIP
+
+*PIP* is the default package installer for Python, enabling easy installation and management of packages from PyPI via the command line.
 
 ```bash
 pip install unstructured-client
 ```
-<!-- End SDK Installation [installation] -->
 
-## Usage
-Only the `files` parameter is required.
+### Poetry
 
+*Poetry* is a modern tool that simplifies dependency management and package publishing by using a single `pyproject.toml` file to handle project metadata and dependencies.
+
+```bash
+poetry add unstructured-client
+```
+
+### Shell and script usage with `uv`
+
+You can use this SDK in a Python shell with [uv](https://docs.astral.sh/uv/) and the `uvx` command that comes with it like so:
+
+```shell
+uvx --from unstructured-client python
+```
+
+It's also possible to write a standalone Python script without needing to set up a whole project like so:
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#     "unstructured-client",
+# ]
+# ///
+
+from unstructured_client import UnstructuredClient
+
+sdk = UnstructuredClient(
+  # SDK arguments
+)
+
+# Rest of script here...
+```
+
+Once that is saved to a file, you can run it with `uv run script.py` where
+`script.py` can be replaced with the actual file name.
+
+## Retries
+
+Some of the endpoints in this SDK support retries. If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API. However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+
+To change the default retry strategy for a single API call, simply provide a `RetryConfig` object to the call:
 ```python
 from unstructured_client import UnstructuredClient
-from unstructured_client.models import shared
-from unstructured_client.models.errors import SDKError
+from unstructured_client.utils import BackoffStrategy, RetryConfig
 
-s = UnstructuredClient(api_key_auth="YOUR_API_KEY")
 
-filename = "_sample_docs/layout-parser-paper-fast.pdf"
+with UnstructuredClient() as uc_client:
 
-with open(filename, "rb") as f:
-    # Note that this currently only supports a single file
-    files=shared.Files(
-        content=f.read(),
-        file_name=filename,
-	)
+    res = uc_client.destinations.create_connection_check_destinations(request={
+        "destination_id": "cb9e35c1-0b04-4d98-83fa-fa6241323f96",
+    },
+        RetryConfig("backoff", BackoffStrategy(1, 50, 1.1, 100), False))
 
-req = shared.PartitionParameters(
-    files=files,
-    # Other partition params
-    strategy='ocr_only',
-    languages=["eng"],
-)
+    assert res.dag_node_connection_check is not None
 
-try:
-    resp = s.general.partition(req)
-    print(resp.elements[0])
-except SDKError as e:
-    print(e)
-```
-
-Result:
+    # Handle response
+    print(res.dag_node_connection_check)
 
 ```
-{
-'type': 'UncategorizedText',
-'element_id': 'fc550084fda1e008e07a0356894f5816',
-'metadata': {
-  'filename': 'layout-parser-paper-fast.pdf',
-  'filetype': 'application/pdf',
-  'languages': ['eng'],
-  'page_number': 1
-  }
-}
-```
 
-### UnstructuredClient
-
-#### Change the base URL
-
-If you are self hosting the API, or developing locally, you can change the server URL when setting up the client.
-
+If you'd like to override the default retry strategy for all operations that support retries, you can use the `retry_config` optional parameter when initializing the SDK:
 ```python
-# Using a local server
-s = unstructured_client.UnstructuredClient(
-    server_url="http://localhost:8000",
-    api_key_auth=api_key,
-)
+from unstructured_client import UnstructuredClient
+from unstructured_client.utils import BackoffStrategy, RetryConfig
 
-# Using your own server
-s = unstructured_client.UnstructuredClient(
-    server_url="https://your-server",
-    api_key_auth=api_key,
-)
+
+with UnstructuredClient(
+    retry_config=RetryConfig("backoff", BackoffStrategy(1, 50, 1.1, 100), False),
+) as uc_client:
+
+    res = uc_client.destinations.create_connection_check_destinations(request={
+        "destination_id": "cb9e35c1-0b04-4d98-83fa-fa6241323f96",
+    })
+
+    assert res.dag_node_connection_check is not None
+
+    # Handle response
+    print(res.dag_node_connection_check)
+
 ```
 
-### PartitionParameters
+## Error Handling
 
-See the [general partition](/docs/models/shared/partitionparameters.md) page for all available parameters. 
+[`UnstructuredClientError`](./src/unstructured_client/models/errors/unstructuredclienterror.py) is the base class for all HTTP error responses. It has the following properties:
 
-#### Splitting PDF by pages
+| Property           | Type             | Description                                                                             |
+| ------------------ | ---------------- | --------------------------------------------------------------------------------------- |
+| `err.message`      | `str`            | Error message                                                                           |
+| `err.status_code`  | `int`            | HTTP response status code eg `404`                                                      |
+| `err.headers`      | `httpx.Headers`  | HTTP response headers                                                                   |
+| `err.body`         | `str`            | HTTP body. Can be empty string if no body is returned.                                  |
+| `err.raw_response` | `httpx.Response` | Raw HTTP response                                                                       |
+| `err.data`         |                  | Optional. Some errors may contain structured data. [See Error Classes](#error-classes). |
 
-In order to speed up processing of long PDF files, `split_pdf_page` can be set to `True` (defaults to `False`). It will cause the PDF to be split at client side, before sending to API, and combining individual responses as single result. This parameter will affect only PDF files, no need to disable it for other filetypes.
-
-Warning: this feature causes the `parent_id` metadata generation in elements to be disabled, as that
-requires having context of multiple pages.
-
-The amount of workers utilized for splitting PDFs is dictated by the `split_pdf_concurrency_level` parameter, with a default of 5 and a maximum of 15 to keep resource usage and costs in check. The splitting process leverages `asyncio` to manage concurrency effectively.
-The size of each batch of pages (ranging from 2 to 20) is internally determined based on the concurrency level and the total number of pages in the document. Because the splitting process uses `asyncio` the client can encouter event loop issues if it is nested in another async runner, like running in a `gevent` spawned task. Instead, this is safe to run in multiprocessing workers (e.g., using `multiprocessing.Pool` with `fork` context).
-
-Example:
+### Example
 ```python
-req = shared.PartitionParameters(
-    files=files,
-    strategy="fast",
-    languages=["eng"],
-    split_pdf_page=True,
-    split_pdf_concurrency_level=8
-)
-```
-<!-- No SDK Available Operations -->
-<!-- No Pagination -->
-<!-- No Error Handling -->
-<!-- No Server Selection -->
+from unstructured_client import UnstructuredClient
+from unstructured_client.models import errors
 
-<!-- Start Custom HTTP Client [http-client] -->
+
+with UnstructuredClient() as uc_client:
+    res = None
+    try:
+
+        res = uc_client.destinations.create_connection_check_destinations(request={
+            "destination_id": "cb9e35c1-0b04-4d98-83fa-fa6241323f96",
+        })
+
+        assert res.dag_node_connection_check is not None
+
+        # Handle response
+        print(res.dag_node_connection_check)
+
+
+    except errors.UnstructuredClientError as e:
+        # The base class for HTTP error responses
+        print(e.message)
+        print(e.status_code)
+        print(e.body)
+        print(e.headers)
+        print(e.raw_response)
+
+        # Depending on the method different errors may be thrown
+        if isinstance(e, errors.HTTPValidationError):
+            print(e.data.detail)  # Optional[errors.Detail]
+```
+
+### Error Classes
+**Primary errors:**
+* [`UnstructuredClientError`](./src/unstructured_client/models/errors/unstructuredclienterror.py): The base class for HTTP error responses.
+  * [`HTTPValidationError`](./src/unstructured_client/models/errors/httpvalidationerror.py): Validation Error. Status code `422`.
+
+<details><summary>Less common errors (6)</summary>
+
+<br />
+
+**Network errors:**
+* [`httpx.RequestError`](https://www.python-httpx.org/exceptions/#httpx.RequestError): Base class for request errors.
+    * [`httpx.ConnectError`](https://www.python-httpx.org/exceptions/#httpx.ConnectError): HTTP client was unable to make a request to a server.
+    * [`httpx.TimeoutException`](https://www.python-httpx.org/exceptions/#httpx.TimeoutException): HTTP request timed out.
+
+**Inherit from [`UnstructuredClientError`](./src/unstructured_client/models/errors/unstructuredclienterror.py)**:
+* [`ServerError`](./src/unstructured_client/models/errors/servererror.py): Server Error. Status code `5XX`. Applicable to 1 of 30 methods.*
+* [`ResponseValidationError`](./src/unstructured_client/models/errors/responsevalidationerror.py): Type mismatch between the response data and the expected Pydantic model. Provides access to the Pydantic validation error via the `cause` attribute.
+
+</details>
+
+\* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
+
 ## Custom HTTP Client
 
-The Python SDK makes API calls using the [requests](https://pypi.org/project/requests/) HTTP library.  In order to provide a convenient way to configure timeouts, cookies, proxies, custom headers, and other low-level configuration, you can initialize the SDK client with a custom `requests.Session` object.
+The Python SDK makes API calls using the [httpx](https://www.python-httpx.org/) HTTP library.  In order to provide a convenient way to configure timeouts, cookies, proxies, custom headers, and other low-level configuration, you can initialize the SDK client with your own HTTP client instance.
+Depending on whether you are using the sync or async version of the SDK, you can pass an instance of `HttpClient` or `AsyncHttpClient` respectively, which are Protocol's ensuring that the client has the necessary methods to make API calls.
+This allows you to wrap the client with your own custom logic, such as adding custom headers, logging, or error handling, or you can just pass an instance of `httpx.Client` or `httpx.AsyncClient` directly.
 
 For example, you could specify a header for every request that this sdk makes as follows:
 ```python
-import unstructured_client
-import requests
+from unstructured_client import UnstructuredClient
+import httpx
 
-http_client = requests.Session()
-http_client.headers.update({'x-custom-header': 'someValue'})
-s = unstructured_client.UnstructuredClient(client=http_client)
+http_client = httpx.Client(headers={"x-custom-header": "someValue"})
+s = UnstructuredClient(client=http_client)
 ```
-<!-- End Custom HTTP Client [http-client] -->
 
-<!-- No Retries -->
-<!-- No Authentication -->
+or you could wrap the client with your own custom logic:
+```python
+from unstructured_client import UnstructuredClient
+from unstructured_client.httpclient import AsyncHttpClient
+import httpx
 
-<!-- Start SDK Example Usage [usage] -->
+class CustomClient(AsyncHttpClient):
+    client: AsyncHttpClient
+
+    def __init__(self, client: AsyncHttpClient):
+        self.client = client
+
+    async def send(
+        self,
+        request: httpx.Request,
+        *,
+        stream: bool = False,
+        auth: Union[
+            httpx._types.AuthTypes, httpx._client.UseClientDefault, None
+        ] = httpx.USE_CLIENT_DEFAULT,
+        follow_redirects: Union[
+            bool, httpx._client.UseClientDefault
+        ] = httpx.USE_CLIENT_DEFAULT,
+    ) -> httpx.Response:
+        request.headers["Client-Level-Header"] = "added by client"
+
+        return await self.client.send(
+            request, stream=stream, auth=auth, follow_redirects=follow_redirects
+        )
+
+    def build_request(
+        self,
+        method: str,
+        url: httpx._types.URLTypes,
+        *,
+        content: Optional[httpx._types.RequestContent] = None,
+        data: Optional[httpx._types.RequestData] = None,
+        files: Optional[httpx._types.RequestFiles] = None,
+        json: Optional[Any] = None,
+        params: Optional[httpx._types.QueryParamTypes] = None,
+        headers: Optional[httpx._types.HeaderTypes] = None,
+        cookies: Optional[httpx._types.CookieTypes] = None,
+        timeout: Union[
+            httpx._types.TimeoutTypes, httpx._client.UseClientDefault
+        ] = httpx.USE_CLIENT_DEFAULT,
+        extensions: Optional[httpx._types.RequestExtensions] = None,
+    ) -> httpx.Request:
+        return self.client.build_request(
+            method,
+            url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            extensions=extensions,
+        )
+
+s = UnstructuredClient(async_client=CustomClient(httpx.AsyncClient()))
+```
+
+## IDE Support
+
+### PyCharm
+
+Generally, the SDK will work well with most IDEs out of the box. However, when using PyCharm, you can enjoy much better integration with Pydantic by installing an additional plugin.
+
+- [PyCharm Pydantic Plugin](https://docs.pydantic.dev/latest/integrations/pycharm/)
+
 ## SDK Example Usage
 
 ### Example
 
 ```python
-import unstructured_client
-from unstructured_client.models import operations, shared
+# Synchronous Example
+from unstructured_client import UnstructuredClient
 
-s = unstructured_client.UnstructuredClient(
-    api_key_auth="YOUR_API_KEY",
+
+with UnstructuredClient() as uc_client:
+
+    res = uc_client.destinations.create_connection_check_destinations(request={
+        "destination_id": "cb9e35c1-0b04-4d98-83fa-fa6241323f96",
+    })
+
+    assert res.dag_node_connection_check is not None
+
+    # Handle response
+    print(res.dag_node_connection_check)
+```
+
+</br>
+
+The same SDK client can also be used to make asynchronous requests by importing asyncio.
+```python
+# Asynchronous Example
+import asyncio
+from unstructured_client import UnstructuredClient
+
+async def main():
+
+    async with UnstructuredClient() as uc_client:
+
+        res = await uc_client.destinations.create_connection_check_destinations_async(request={
+            "destination_id": "cb9e35c1-0b04-4d98-83fa-fa6241323f96",
+        })
+
+        assert res.dag_node_connection_check is not None
+
+        # Handle response
+        print(res.dag_node_connection_check)
+
+asyncio.run(main())
+```
+
+Refer to the [API parameters page](https://docs.unstructured.io/api-reference/api-services/api-parameters) for all available parameters.
+
+## Configuration
+
+### Splitting PDF by pages
+
+See [page splitting](https://docs.unstructured.io/api-reference/api-services/sdk#page-splitting) for more details.
+
+In order to speed up processing of large PDF files, the client splits up PDFs into smaller files, sends these to the API concurrently, and recombines the results. `split_pdf_page` can be set to `False` to disable this.
+
+The amount of workers utilized for splitting PDFs is dictated by the `split_pdf_concurrency_level` parameter, with a default of 5 and a maximum of 15 to keep resource usage and costs in check. The splitting process leverages `asyncio` to manage concurrency effectively.
+The size of each batch of pages (ranging from 2 to 20) is internally determined based on the concurrency level and the total number of pages in the document. Because the splitting process uses `asyncio` the client can encounter event loop issues if it is nested in another async runner, like running in a `gevent` spawned task. Instead, this is safe to run in multiprocessing workers (e.g., using `multiprocessing.Pool` with `fork` context).
+
+Example:
+```python
+req = operations.PartitionRequest(
+    partition_parameters=shared.PartitionParameters(
+        files=files,
+        strategy="fast",
+        languages=["eng"],
+        split_pdf_concurrency_level=8
+    )
+)
+```
+
+### Sending specific page ranges
+
+When `split_pdf_page=True` (the default), you can optionally specify a page range to send only a portion of your PDF to be extracted. The parameter takes a list of two integers to specify the range, inclusive. A ValueError is thrown if the page range is invalid.
+
+Example:
+```python
+req = operations.PartitionRequest(
+    partition_parameters=shared.PartitionParameters(
+        files=files,
+        strategy="fast",
+        languages=["eng"],
+        split_pdf_page_range=[10,15],
+    )
+)
+```
+
+### Splitting PDF by pages - strict mode
+
+When `split_pdf_allow_failed=False` (the default), any errors encountered during sending parallel request will break the process and raise an exception. 
+When `split_pdf_allow_failed=True`, the process will continue even if some requests fail, and the results will be combined at the end (the output from the errored pages will not be included).
+
+Example:
+```python
+req = operations.PartitionRequest(
+    partition_parameters=shared.PartitionParameters(
+        files=files,
+        strategy="fast",
+        languages=["eng"],
+        split_pdf_allow_failed=True,
+    )
+)
+```
+
+### Streaming elements to a file instead of memory
+
+For very large documents, the parsed element list can dominate the client's memory: the split-PDF path holds a list per chunk, a flattened list, a serialized blob and the SDK's re-parse of that blob. Request `application/x-ndjson` to skip all of it. The chunk responses are concatenated on disk and you get back a path in `elements_file` instead of a list in `elements`, which keeps peak memory at roughly one chunk.
+
+**You own the returned file and are responsible for deleting it.**
+
+> [!NOTE]
+> `elements_file` is always set when you pass this header, but the **memory saving** only applies to the split-PDF path. An input is only split when it is a PDF, `split_pdf_page=True` (the default), and it has more than two pages — `split_size` is floored at 2, so one- and two-page PDFs are sent whole. For those, and for non-PDFs, the response body is read fully into memory before being written to disk, so peak memory can reach roughly twice the body size.
+
+Example:
+```python
+import json
+from pathlib import Path
+
+from unstructured_client.general import PartitionAcceptEnum
+
+res = client.general.partition(
+    request=req,
+    accept_header_override=PartitionAcceptEnum.APPLICATION_X_NDJSON,
 )
 
+try:
+    with open(res.elements_file, encoding="utf-8") as f:
+        for line in f:
+            element = json.loads(line)
+            ...
+finally:
+    # missing_ok so a failure to open the file isn't masked by the cleanup.
+    Path(res.elements_file).unlink(missing_ok=True)
+```
 
-res = s.general.partition(request=operations.PartitionRequest(
-    partition_parameters=shared.PartitionParameters(
-        files=shared.Files(
-            content='0x2cC94b2FEF'.encode(),
-            file_name='your_file_here',
-        ),
-        strategy=shared.Strategy.AUTO,
-    ),
-))
+## File uploads
 
-if res.elements is not None:
-    # handle response
-    pass
+Certain SDK methods accept file objects as part of a request body or multi-part request. It is possible and typically recommended to upload files as a stream rather than reading the entire contents into memory. This avoids excessive memory consumption and potentially crashing with out-of-memory errors when working with very large files. The following example demonstrates how to attach a file stream to a request.
+
+> [!TIP]
+>
+> For endpoints that handle file uploads bytes arrays can also be used. However, using streams is recommended for large files.
+>
+
+```python
+from unstructured_client import UnstructuredClient
+
+
+with UnstructuredClient() as uc_client:
+
+    res = uc_client.jobs.create_job(request={
+        "body_create_job": {
+            "request_data": "<value>",
+        },
+    })
+
+    assert res.job_information is not None
+
+    # Handle response
+    print(res.job_information)
 
 ```
-<!-- End SDK Example Usage [usage] -->
 
-<!-- Placeholder for Future Speakeasy SDK Sections -->
+## Resource Management
+
+The `UnstructuredClient` class implements the context manager protocol and registers a finalizer function to close the underlying sync and async HTTPX clients it uses under the hood. This will close HTTP connections, release memory and free up other resources held by the SDK. In short-lived Python programs and notebooks that make a few SDK method calls, resource management may not be a concern. However, in longer-lived programs, it is beneficial to create a single SDK instance via a [context manager][context-manager] and reuse it across the application.
+
+[context-manager]: https://docs.python.org/3/reference/datamodel.html#context-managers
+
+```python
+from unstructured_client import UnstructuredClient
+def main():
+
+    with UnstructuredClient() as uc_client:
+        # Rest of application here...
+
+
+# Or when using async:
+async def amain():
+
+    async with UnstructuredClient() as uc_client:
+        # Rest of application here...
+```
+
+## Debugging
+
+You can setup your SDK to emit debug logs for SDK requests and responses.
+
+You can pass your own logger class directly into your SDK.
+```python
+from unstructured_client import UnstructuredClient
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+s = UnstructuredClient(debug_logger=logging.getLogger("unstructured_client"))
+```
 
 ### Maturity
 
@@ -206,18 +520,6 @@ The following instructions are intended to help you get up and running with `uns
 
 ### Contributions
 
-While we value open-source contributions to this SDK, this library is generated programmatically by Speakeasy. In order to start working with this repo, you need to:
-1. Install Speakeasy client locally https://github.com/speakeasy-api/speakeasy#installation
-2. Run `speakeasy auth login`
-3. Run `make client-generate`. This allows to iterate development with python client.
-
-There are two important files used by `make client-generate`:
-1. `openapi.json` which is actually not stored here, [but fetched from unstructured-api](https://api.unstructured.io/general/openapi.json), represents the API that is supported on backend.
-2. `overlay_client.yaml` is a handcrafted diff that when applied over above, produces `openapi_client.json` which is used to generate SDK.
-
-Once PR with changes is merged, Github CI will autogenerate the Speakeasy client in a new PR, using
-the `openapi.json` and `overlay_client.yaml` You will have to manually bring back the human created lines in it.
+While we value open-source contributions to this SDK, this library is not accepting direct changes at this time.
 
 Feel free to open a PR or a Github issue as a proof of concept and we'll do our best to include it in a future release!
-
-### SDK Created by [Speakeasy](https://www.speakeasyapi.dev/docs/sdk-design/python/methodology-python)

@@ -1,26 +1,29 @@
-speakeasyVersion: 1.299.6
+speakeasyVersion: 1.601.0
 sources:
     my-source:
         sourceNamespace: my-source
-        sourceRevisionDigest: sha256:90bd16aaed9a9bfefbf815e309c927f19491bd472b7c1f7f56dab7bf4a4c2dc7
-        sourceBlobDigest: sha256:6d2271499f0b5dd811144b3e1857443c6401e45229627f3078f88672f655334c
+        sourceRevisionDigest: sha256:bb294c5acf766035792f752ed036cc8e4183e5f23b75fa5cb885b7499dcf6306
+        sourceBlobDigest: sha256:555b59cc03c5a4e9bfb3817e48dec67a8b8e13a6a46712cf5e23a6230fec359e
         tags:
             - latest
-            - main
+            - speakeasy-sdk-regen-1768522382
+            - 1.2.28
 targets:
     unstructured-python:
         source: my-source
         sourceNamespace: my-source
-        sourceRevisionDigest: sha256:90bd16aaed9a9bfefbf815e309c927f19491bd472b7c1f7f56dab7bf4a4c2dc7
-        sourceBlobDigest: sha256:6d2271499f0b5dd811144b3e1857443c6401e45229627f3078f88672f655334c
-        outLocation: /github/workspace/repo
+        sourceRevisionDigest: sha256:bb294c5acf766035792f752ed036cc8e4183e5f23b75fa5cb885b7499dcf6306
+        sourceBlobDigest: sha256:555b59cc03c5a4e9bfb3817e48dec67a8b8e13a6a46712cf5e23a6230fec359e
+        codeSamplesNamespace: my-source-code-samples
+        codeSamplesRevisionDigest: sha256:4dd3dc9d9824533e6a8e70ef4a0db808b125deb8c266a62a99a11c64162b7595
 workflow:
     workflowVersion: 1.0.0
     speakeasyVersion: latest
     sources:
         my-source:
             inputs:
-                - location: https://api.unstructured.io/general/openapi.json
+                - location: https://platform.unstructuredapp.io/openapi.json
+                - location: https://api.unstructuredapp.io/general/openapi.json
             overlays:
                 - location: ./overlay_client.yaml
             registry:
@@ -31,3 +34,5 @@ workflow:
             source: my-source
             codeSamples:
                 output: codeSamples.yaml
+                registry:
+                    location: registry.speakeasyapi.dev/unstructured/unstructured5xr/my-source-code-samples

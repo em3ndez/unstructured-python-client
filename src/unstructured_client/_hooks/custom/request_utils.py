@@ -1,116 +1,249 @@
 from __future__ import annotations
 
 import asyncio
-import copy
 import io
 import json
 import logging
-from typing import Optional, Tuple
+import os
+import tempfile
+from typing import Tuple, Any, BinaryIO, Optional, TextIO
+from urllib.parse import urlparse
 
 import httpx
-import requests
-from requests.structures import CaseInsensitiveDict
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+from httpx import URL
+from httpx._multipart import DataField, FileField
 
 from unstructured_client._hooks.custom.common import UNSTRUCTURED_CLIENT_LOGGER_NAME
 from unstructured_client._hooks.custom.form_utils import (
     PARTITION_FORM_FILES_KEY,
     PARTITION_FORM_SPLIT_PDF_PAGE_KEY,
+    PARTITION_FORM_SPLIT_PDF_ALLOW_FAILED_KEY,
+    PARTITION_FORM_SPLIT_CACHE_TMP_DATA_KEY,
+    PARTITION_FORM_SPLIT_CACHE_TMP_DATA_DIR_KEY,
+    PARTITION_FORM_PAGE_RANGE_KEY,
     PARTITION_FORM_STARTING_PAGE_NUMBER_KEY,
     FormData,
+)
+from unstructured_client.models import shared
+from unstructured_client.utils import (
+    BackoffStrategy,
+    Retries,
+    RetryConfig,
+    retry_async,
+    serialize_request_body,
 )
 
 logger = logging.getLogger(UNSTRUCTURED_CLIENT_LOGGER_NAME)
 
 
-def create_request_body(
-    form_data: FormData, page_content: io.BytesIO, filename: str, page_number: int
-) -> MultipartEncoder:
-    payload = prepare_request_payload(form_data)
-    body = MultipartEncoder(
-        fields={
-            **payload,
-            PARTITION_FORM_FILES_KEY: (
-                filename,
-                page_content,
-                "application/pdf",
-            ),
-            PARTITION_FORM_STARTING_PAGE_NUMBER_KEY: str(page_number),
-        }
+def create_default_retry_config() -> RetryConfig:
+    one_second = 1000
+    one_minute = 1000 * 60
+    return RetryConfig(
+        "backoff",
+        BackoffStrategy(
+            initial_interval=one_second * 3,
+            max_interval=one_minute * 12,
+            max_elapsed_time=one_minute * 30,
+            exponent=1.88,
+        ),
+        retry_connection_errors=True,
     )
-    return body
 
 
-def create_httpx_request(
-    original_request: requests.Request, body: MultipartEncoder
+def create_split_retry_config(retry_config: Optional[RetryConfig]) -> RetryConfig:
+    if retry_config is None:
+        return create_default_retry_config()
+
+    # Split chunk requests run after the top-level dummy request has already
+    # succeeded, so they must preserve their own transport-level retry budget.
+    return RetryConfig(
+        retry_config.strategy,
+        retry_config.backoff,
+        True,
+    )
+
+
+def get_multipart_stream_fields(request: httpx.Request) -> dict[str, Any]:
+    """Extracts the multipart fields from the request.
+
+    Args:
+        request: The request object.
+
+    Returns:
+        The multipart fields.
+
+    Raises:
+        Exception: If the filename is not set
+    """
+    content_type = request.headers.get("Content-Type", "")
+    if "multipart" not in content_type:
+        return {}
+    if request.stream is None or not hasattr(request.stream, "fields"):
+        return {}
+    fields = request.stream.fields
+
+    mapped_fields: dict[str, Any] = {}
+    for field in fields:
+        if isinstance(field, DataField):
+            if "[]" in field.name:
+                name = field.name.replace("[]", "")
+                if name not in mapped_fields:
+                    mapped_fields[name] = []
+                mapped_fields[name].append(field.value)
+            mapped_fields[field.name] = field.value
+        elif isinstance(field, FileField):
+            if field.filename is None or not field.filename.strip():
+                raise ValueError("Filename can't be an empty string.")
+            mapped_fields[field.name] = {
+                "filename": field.filename,
+                "content_type": field.headers.get("Content-Type", ""),
+                "file": field.file,
+            }
+    return mapped_fields
+
+
+def create_pdf_chunk_request_params(
+    form_data: FormData, page_number: int
+) -> dict[str, Any]:
+    """Creates the request body for the partition API."
+
+    Args:
+        form_data: The form data.
+        page_number: The page number.
+
+    Returns:
+        The updated request payload for the chunk.
+    """
+    fields_to_drop = [
+        PARTITION_FORM_SPLIT_PDF_PAGE_KEY,
+        PARTITION_FORM_SPLIT_PDF_ALLOW_FAILED_KEY,
+        PARTITION_FORM_FILES_KEY,
+        PARTITION_FORM_PAGE_RANGE_KEY,
+        PARTITION_FORM_PAGE_RANGE_KEY.replace("[]", ""),
+        PARTITION_FORM_STARTING_PAGE_NUMBER_KEY,
+        PARTITION_FORM_SPLIT_CACHE_TMP_DATA_KEY,
+        PARTITION_FORM_SPLIT_CACHE_TMP_DATA_DIR_KEY,
+    ]
+    chunk_payload = {
+        key: form_data[key] for key in form_data if key not in fields_to_drop
+    }
+    chunk_payload[PARTITION_FORM_SPLIT_PDF_PAGE_KEY] = "false"
+    chunk_payload[PARTITION_FORM_STARTING_PAGE_NUMBER_KEY] = str(page_number)
+    return chunk_payload
+
+
+def create_pdf_chunk_request(
+    form_data: FormData,
+    pdf_chunk: Tuple[BinaryIO, int],
+    original_request: httpx.Request,
+    filename: str,
 ) -> httpx.Request:
-    headers = prepare_request_headers(original_request.headers)
+    """Creates a new request object with the updated payload for the partition API.
+
+    Args:
+        form_data: The form data.
+        pdf_chunk: Tuple of pdf chunk contents (can be both io.BytesIO or
+            a file object created with e.g. open()) and the page number.
+        original_request: The original request.
+        filename: The filename.
+
+    Returns:
+        The updated request object.
+    """
+    pdf_chunk_file, page_number = pdf_chunk
+    data = create_pdf_chunk_request_params(form_data, page_number)
+    original_headers = prepare_request_headers(original_request.headers)
+
+    pdf_chunk_content: BinaryIO | bytes = (
+        pdf_chunk_file.getvalue()
+        if isinstance(pdf_chunk_file, io.BytesIO)
+        else pdf_chunk_file
+    )
+
+    pdf_chunk_partition_params = shared.PartitionParameters(
+        files=shared.Files(
+            content=pdf_chunk_content,
+            file_name=filename,
+            content_type="application/pdf",
+        ),
+        **data,
+    )
+    serialized_body = serialize_request_body(
+        pdf_chunk_partition_params,
+        False,
+        False,
+        "multipart",
+        shared.PartitionParameters,
+    )
+    if serialized_body is None:
+        raise ValueError("Failed to serialize the request body.")
     return httpx.Request(
         method="POST",
         url=original_request.url or "",
-        content=body.to_string(),
-        headers={**headers, "Content-Type": body.content_type},
-    )
-
-
-def create_request(
-    request: requests.PreparedRequest,
-    body: MultipartEncoder,
-) -> requests.Request:
-    headers = prepare_request_headers(request.headers)
-    return requests.Request(
-        method="POST",
-        url=request.url or "",
-        data=body,
-        headers={**headers, "Content-Type": body.content_type},
+        headers={**original_headers},
+        content=serialized_body.content,
+        data=serialized_body.data,
+        files=serialized_body.files,
     )
 
 
 async def call_api_async(
     client: httpx.AsyncClient,
-    page: Tuple[io.BytesIO, int],
-    original_request: requests.Request,
-    form_data: FormData,
-    filename: str,
+    pdf_chunk_request: httpx.Request,
+    pdf_chunk_file: BinaryIO,
     limiter: asyncio.Semaphore,
-) -> tuple[int, dict]:
-    page_content, page_number = page
-    body = create_request_body(form_data, page_content, filename, page_number)
-    new_request = create_httpx_request(original_request, body)
+    retry_config: Optional[RetryConfig] = None,
+    operation_id: Optional[str] = None,
+    chunk_index: Optional[int] = None,
+    page_number: Optional[int] = None,
+) -> httpx.Response:
+    retryable_codes = ["5xx"]
+    effective_retry_config = create_split_retry_config(retry_config)
+
+    async def do_request():
+        return await client.send(pdf_chunk_request)
+
     async with limiter:
         try:
-            response = await client.send(new_request)
-            return response.status_code, response.json()
-        except Exception:
-            logger.error("Failed to send request for page %d", page_number)
-            return 500, {}
-
-
-def call_api(
-    client: Optional[requests.Session],
-    page: Tuple[io.BytesIO, int],
-    request: requests.PreparedRequest,
-    form_data: FormData,
-    filename: str,
-) -> requests.Response:
-    if client is None:
-        raise RuntimeError("HTTP client not accessible!")
-    page_content, page_number = page
-
-    body = create_request_body(form_data, page_content, filename, page_number)
-    new_request = create_request(request, body)
-    prepared_request = client.prepare_request(new_request)
-
-    try:
-        return client.send(prepared_request)
-    except Exception:
-        logger.error("Failed to send request for page %d", page_number)
-        return requests.Response()
+            logger.debug(
+                "split_pdf event=chunk_request_send operation_id=%s chunk_index=%s page_number=%s retry_config_mode=%s retry_connection_errors=%s",
+                operation_id,
+                chunk_index,
+                page_number,
+                "sdk_custom" if retry_config is not None else "sdk_default_or_unset",
+                effective_retry_config.retry_connection_errors,
+            )
+            response = await retry_async(
+                do_request, Retries(effective_retry_config, retryable_codes)
+            )
+            logger.debug(
+                "split_pdf event=chunk_request_response operation_id=%s chunk_index=%s page_number=%s status_code=%d",
+                operation_id,
+                chunk_index,
+                page_number,
+                response.status_code,
+            )
+            return response
+        except Exception as e:
+            logger.error(
+                "split_pdf event=chunk_request_error operation_id=%s chunk_index=%s page_number=%s error_type=%s error=%s",
+                operation_id,
+                chunk_index,
+                page_number,
+                type(e).__name__,
+                e,
+                exc_info=e,
+            )
+            raise e
+        finally:
+            if not isinstance(pdf_chunk_file, io.BytesIO) and not pdf_chunk_file.closed:
+                pdf_chunk_file.close()
 
 
 def prepare_request_headers(
-    headers: CaseInsensitiveDict[str],
-) -> CaseInsensitiveDict[str]:
+    headers: httpx.Headers,
+) -> httpx.Headers:
     """Prepare the request headers by removing the 'Content-Type' and 'Content-Length' headers.
 
     Args:
@@ -119,60 +252,231 @@ def prepare_request_headers(
     Returns:
         The modified request headers.
     """
-    headers = copy.deepcopy(headers)
-    headers.pop("Content-Type", None)
-    headers.pop("Content-Length", None)
-    return headers
+    new_headers = headers.copy()
+    new_headers.pop("Content-Type", None)
+    new_headers.pop("Content-Length", None)
+    return new_headers
 
 
-def prepare_request_payload(form_data: FormData) -> FormData:
-    """Prepares the request payload by removing unnecessary keys and updating the file.
-
-    Args:
-        form_data: The original form data.
-
-    Returns:
-        The updated request payload.
-    """
-    payload = copy.deepcopy(form_data)
-    payload.pop(PARTITION_FORM_SPLIT_PDF_PAGE_KEY, None)
-    payload.pop(PARTITION_FORM_FILES_KEY, None)
-    payload.pop(PARTITION_FORM_STARTING_PAGE_NUMBER_KEY, None)
-    updated_parameters = {
-        PARTITION_FORM_SPLIT_PDF_PAGE_KEY: "false",
-    }
-    payload.update(updated_parameters)
-    return payload
-
-
-def create_response(response: requests.Response, elements: list) -> requests.Response:
+def create_response(elements: list) -> httpx.Response:
     """
     Creates a modified response object with updated content.
 
     Args:
-        response: The original response object.
         elements: The list of elements to be serialized and added to
         the response.
 
     Returns:
         The modified response object with updated content.
     """
-    response_copy = copy.deepcopy(response)
+    response = httpx.Response(
+        status_code=200, headers={"Content-Type": "application/json"}
+    )
     content = json.dumps(elements).encode()
     content_length = str(len(content))
-    response_copy.headers.update({"Content-Length": content_length})
-    setattr(response_copy, "_content", content)
-    return response_copy
+    response.headers.update({"Content-Length": content_length})
+    setattr(response, "_content", content)
+    return response
 
 
-def log_after_split_response(status_code: int, split_number: int):
-    if status_code == 200:
-        logger.info(
-            "Successfully partitioned set #%d, elements added to the final result.",
-            split_number,
-        )
-    else:
-        logger.warning(
-            "Failed to partition set #%d, its elements will be omitted in the final result.",
-            split_number,
-        )
+# Marks a response this client synthesized, whose body is a path to a local file rather
+# than elements. It is deliberately an httpx extension and NOT a response header: a
+# header is wire-controlled, so a server could name any local path and have the SDK hand
+# it to the caller, who then opens and (per the documented usage) deletes it. Extensions
+# are populated by the transport, so a remote server cannot set this key.
+ELEMENTS_FILE_EXTENSION_KEY = "unstructured_elements_file"
+NDJSON_MEDIA_TYPE = "application/x-ndjson"
+
+_SNIFF_BLOCK_SIZE = 64
+
+
+class EmptyChunkResponseError(ValueError):
+    """A split-PDF chunk returned HTTP 200 with a body its own media type cannot produce.
+
+    Whether an empty body is a defect depends on the format the chunk claims. JSON has no
+    empty document -- a chunk with no elements is `[]` -- so nothing at all is malformed,
+    and skipping it would make the document silently short with no way for the caller to
+    notice (`split_pdf_allow_failed` does not cover it, because the chunk reports
+    success). NDJSON is a record per line, so an empty body is a well-formed zero-record
+    response and is accepted.
+
+    Subclasses `ValueError` so that it lands where the buffered path's `JSONDecodeError`
+    (also a `ValueError`) already does for callers that guard the parse.
+    """
+
+
+def _is_ndjson_media_type(media_type: Optional[str]) -> bool:
+    """Whether a chunk's `Content-Type` declares NDJSON, ignoring any parameters."""
+    if not media_type:
+        return False
+    return media_type.split(";", 1)[0].strip().lower() == NDJSON_MEDIA_TYPE
+
+
+def _first_non_space_char(stream: TextIO) -> str:
+    """Return the first non-whitespace character in `stream`, or "" if there is none."""
+    while True:
+        block = stream.read(_SNIFF_BLOCK_SIZE)
+        if not block:
+            return ""
+        stripped = block.lstrip()
+        if stripped:
+            return stripped[0]
+
+
+def combine_chunk_files_to_ndjson(
+    chunk_paths: list[str],
+    out_path: str,
+    media_types: Optional[list[Optional[str]]] = None,
+) -> int:
+    """Combine per-chunk split-PDF response files into one NDJSON file on disk.
+
+    Recombining chunks by parsing them builds four full copies of the document (a list
+    per chunk, a flattened list, a `json.dumps` blob, and the SDK's re-parse of that
+    blob). Concatenating on disk keeps peak memory at roughly one chunk instead.
+
+    A chunk file is either a JSON array (server returned `application/json`) or already
+    NDJSON (server honored `application/x-ndjson`); the first non-whitespace character
+    says which. A leading `[` is treated as an array, and anything else is assumed to be
+    one JSON value per line -- an assumption, not a check, so a pretty-printed multi-line
+    object would be split into invalid lines. No endpoint returns that today.
+
+    NDJSON chunks are copied through without parsing.
+
+    An empty body is read against the chunk's declared media type, which is the only
+    thing that distinguishes the two cases: NDJSON encodes zero records as zero lines, so
+    an empty NDJSON chunk contributes nothing and is fine; JSON has no empty document, so
+    an empty one is malformed and raises rather than silently shortening the result.
+    A chunk whose media type is unknown is treated as JSON -- that is what the deployed
+    API returns, and guessing NDJSON would reinstate the silent truncation.
+
+    Args:
+        chunk_paths: Per-chunk response files, in element order.
+        out_path: File to write the combined NDJSON to.
+        media_types: The `Content-Type` each chunk was served with, positionally matching
+            `chunk_paths`. Omit when the media types are not known.
+
+    Returns:
+        The number of elements written.
+
+    Raises:
+        EmptyChunkResponseError: A non-NDJSON chunk returned 200 with an empty body.
+    """
+    total = 0
+    with open(out_path, "w", encoding="utf-8") as out:
+        for index, chunk_path in enumerate(chunk_paths):
+            media_type = media_types[index] if media_types is not None else None
+            with open(chunk_path, "r", encoding="utf-8") as chunk:
+                first_char = _first_non_space_char(chunk)
+                if not first_char:
+                    if _is_ndjson_media_type(media_type):
+                        # Zero records, spelled the only way NDJSON can spell it.
+                        logger.debug(
+                            "split_pdf event=ndjson_empty_chunk file=%s media_type=%s",
+                            os.path.basename(chunk_path),
+                            media_type,
+                        )
+                        continue
+                    # A JSON 200 with an empty body. Fail loudly: skipping it makes the
+                    # document silently short with no way for the caller to notice, since
+                    # this function's only output is the combined path. The buffered path
+                    # raises `JSONDecodeError` on the same response, so NDJSON mode must
+                    # not turn a hard failure into truncation.
+                    logger.error(
+                        "split_pdf event=empty_chunk_body file=%s media_type=%s",
+                        os.path.basename(chunk_path),
+                        media_type,
+                    )
+                    raise EmptyChunkResponseError(
+                        "A split-PDF chunk returned HTTP 200 with an empty body "
+                        f"({os.path.basename(chunk_path)}, Content-Type: "
+                        f"{media_type or 'unset'}); its elements would be missing from the "
+                        "combined output. A JSON chunk with no elements must be an empty "
+                        "array."
+                    )
+                chunk.seek(0)
+
+                if first_char == "[":
+                    # A chunk is bounded (20 pages by default), so a plain load avoids
+                    # taking on a streaming-parser dependency.
+                    for element in json.load(chunk):
+                        out.write(json.dumps(element, ensure_ascii=False))
+                        out.write("\n")
+                        total += 1
+                else:
+                    for line in chunk:
+                        line = line.strip()
+                        if line:
+                            out.write(line)
+                            out.write("\n")
+                            total += 1
+    return total
+
+
+def write_chunk_body_to_temp(response: httpx.Response, dir_: Optional[str] = None) -> str:
+    """Spill an in-memory chunk response body to a temp file, returning its path.
+
+    Used by elements-file mode when `cache_tmp_data` is off and there is no cached file
+    to reference. The body is written verbatim so that `combine_chunk_files_to_ndjson`
+    gets the same input it does in the cached case.
+
+    Args:
+        response: The chunk response whose body should be spilled.
+        dir_: Directory to create the file in. Defaults to the system temp directory.
+
+    Returns:
+        The path to the spilled file. The caller owns deleting it.
+    """
+    fd, path = tempfile.mkstemp(suffix=".ndjson", dir=dir_ or tempfile.gettempdir())
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(response.content)
+    except BaseException:
+        # The caller only registers this path for cleanup once we return, so a failed
+        # write (a full disk, most likely) has to clean up after itself or the file is
+        # orphaned -- and a full disk is exactly the case that repeats.
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        raise
+    return path
+
+
+def create_elements_file_response(elements_file: str) -> httpx.Response:
+    """Create a synthetic 200 response whose payload is a path to an NDJSON file.
+
+    Mirrors the split hook's existing convention of a cached chunk response carrying its
+    temp-file path as the body. The path is also recorded in `ELEMENTS_FILE_EXTENSION_KEY`
+    so the SDK can tell this apart from a real NDJSON body streamed from the server
+    without trusting anything that came off the wire.
+
+    Args:
+        elements_file: Path to the combined NDJSON file of elements.
+
+    Returns:
+        The synthetic response.
+    """
+    content = elements_file.encode()
+    response = httpx.Response(
+        status_code=200,
+        headers={
+            "Content-Type": NDJSON_MEDIA_TYPE,
+            "Content-Length": str(len(content)),
+        },
+        extensions={ELEMENTS_FILE_EXTENSION_KEY: elements_file},
+    )
+    setattr(response, "_content", content)
+    return response
+
+
+def get_base_url(url: str | URL) -> str:
+    """Extracts the base URL from the given URL.
+
+    Args:
+        url: The URL.
+
+    Returns:
+        The base URL.
+    """
+    parsed_url = urlparse(str(url))
+    return f"{parsed_url.scheme}://{parsed_url.netloc}"

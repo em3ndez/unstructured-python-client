@@ -1,72 +1,75 @@
+from __future__ import annotations
+
 import io
 import logging
-from typing import Generator, Tuple
+from typing import cast, Optional, BinaryIO, Union
 
-from pypdf import PdfReader, PdfWriter
-from pypdf.errors import PdfReadError
+from pypdf import PdfReader
+from pypdf.errors import FileNotDecryptedError, PdfReadError
 
 from unstructured_client._hooks.custom.common import UNSTRUCTURED_CLIENT_LOGGER_NAME
-from unstructured_client.models import shared
+from unstructured_client._hooks.custom.validation_errors import FileValidationError
 
 logger = logging.getLogger(UNSTRUCTURED_CLIENT_LOGGER_NAME)
 
-
-def get_pdf_pages(
-    pdf: PdfReader, split_size: int = 1
-) -> Generator[Tuple[io.BytesIO, int, int], None, None]:
-    """Reads given bytes of a pdf file and split it into n file-like objects, each
-    with `split_size` pages.
-
-    Args:
-        file_content: Content of the PDF file.
-        split_size: Split size, e.g. if the given file has 10 pages
-            and this value is set to 2 it will yield 5 documents, each containing 2 pages
-            of the original document. By default it will split each page to a separate file.
-
-    Yields:
-        The file contents with their page number and overall pages number of the original document.
-    """
-
-    offset = 0
-    offset_end = len(pdf.pages)
-
-    while offset < offset_end:
-        new_pdf = PdfWriter()
-        pdf_buffer = io.BytesIO()
-
-        end = min(offset + split_size, offset_end)
-
-        for page in list(pdf.pages[offset:end]):
-            new_pdf.add_page(page)
-
-        new_pdf.write(pdf_buffer)
-        pdf_buffer.seek(0)
-
-        yield pdf_buffer, offset, offset_end
-        offset += split_size
+# Loading pdfs with strict=False can dump a lot of warnings
+# We don't need to display these
+pdf_logger = logging.getLogger("pypdf")
+pdf_logger.setLevel(logging.ERROR)
 
 
-def is_pdf(file: shared.Files) -> bool:
-    """Checks if the given file is a PDF.
+class PDFValidationError(FileValidationError):
+    """Exception for PDF validation errors."""
 
-    First it checks the file extension and if it is equal to `.pdf`, then
-    it tries to read that file. If there is no error then we assume it is a proper PDF.
+    def __init__(self, message: str):
+        super().__init__(message, file_type="PDF")
+
+
+def read_pdf(pdf_file: Union[BinaryIO, bytes]) -> Optional[PdfReader]:
+    """Reads the given PDF file.
 
     Args:
-        file: The file to be checked.
+        pdf_file: The PDF file to be read.
 
     Returns:
-        True if the file is a PDF, False otherwise.
+        The PdfReader object if the file is a PDF, None otherwise.
     """
-    if not file.file_name.endswith(".pdf"):
-        logger.warning("Given file doesn't have '.pdf' extension. Continuing without splitting.")
-        return False
 
     try:
-        PdfReader(io.BytesIO(file.content), strict=True)
-    except (PdfReadError, UnicodeDecodeError) as exc:
-        logger.error(exc)
-        logger.warning("The file does not appear to be a valid PDF.")
-        return False
+        if isinstance(pdf_file, bytes):
+            content = cast(bytes, pdf_file)
+            pdf_file = io.BytesIO(content)
+        return PdfReader(pdf_file, strict=False)
+    except (PdfReadError, UnicodeDecodeError):
+        return None
 
-    return True
+
+def check_pdf(pdf: PdfReader) -> PdfReader:
+    """
+    Check if PDF is:
+    - Encrypted
+    - Has corrupted pages
+    - Has corrupted root object
+
+    Throws:
+    - PDFValidationError if file is encrypted or corrupted
+    """
+    try:
+        # This will raise if the file is encrypted
+        pdf.metadata  # pylint: disable=pointless-statement
+
+        # This will raise if the file's root object is corrupted
+        pdf.root_object  # pylint: disable=pointless-statement
+
+        # This will raise if the file's pages are corrupted
+        list(pdf.pages)
+
+        return pdf
+    except FileNotDecryptedError as e:
+        raise PDFValidationError(
+            "File is encrypted. Please decrypt it with password.",
+        ) from e
+    except PdfReadError as e:
+        raise PDFValidationError(
+            f"File does not appear to be a valid PDF. Error: {e}",
+        ) from e
